@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Brief 15 — Lumière Cosmetics Shop
 
 A React + Tailwind CSS front end for the Brief 15 Spring Boot backend API project. It includes a customer storefront and an admin product-management area.
@@ -110,3 +111,7 @@ npm install
 
 npm run dev
 
+=======
+# lumierebeauty-frontend
+frontend with React + vite
+>>>>>>> f02b820b5c4044ace3d7a638c17b26e4be226c5c
