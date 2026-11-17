@@ -86,8 +86,20 @@ export const brandApi = {
   }
 }
 
+
 export const authApi = {
-  // POST /api/auth/login
+  // POST /api/users
+  async register(accountData) {
+    try {
+      const response = await apiClient.post('/users', accountData)
+      return response.data
+    } catch (error) {
+      console.error('Registration failed:', error)
+      throw error
+    }
+  },
+
+  // Future endpoint: POST /api/auth/login
   async login(credentials) {
     try {
       const response = await apiClient.post('/auth/login', credentials)
@@ -96,19 +108,12 @@ export const authApi = {
       console.error('Login failed:', error)
       throw error
     }
-  },
-
-  // POST /api/auth/register
-  async register(accountData) {
-    try {
-      const response = await apiClient.post('/auth/register', accountData)
-      return response.data
-    } catch (error) {
-      console.error('Registration failed:', error)
-      throw error
-    }
   }
 }
+
+
+
+
 
 export const orderApi = {
   // POST /api/orders
