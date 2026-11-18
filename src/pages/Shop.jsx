@@ -1,17 +1,28 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { Search, SlidersHorizontal } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
-import { useShop } from '../context/ShopContext'
 import { categories, brands } from '../data/products'
 import ProductCard from '../components/ProductCard'
+import { productApi } from '../services/api'
 
 export default function Shop() {
-  const { products } = useShop()
+  const [products, setProducts] = useState([])
   const [params, setParams] = useSearchParams()
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState('featured')
   const brand = params.get('brand') || 'All'
   const active = params.get('category') || 'All'
+
+  useEffect(() => {
+    productApi.getAll()
+      .then((data) => {
+        setProducts(data)
+      })
+      .catch((error) => {
+        console.error('Failed to load products from backend:', error)
+      });
+  }, [])
+
   const selectBrand = (value) => {
     const next = new URLSearchParams(params)
     if (value === 'All') next.delete('brand')

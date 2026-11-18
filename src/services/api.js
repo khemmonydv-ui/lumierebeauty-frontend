@@ -125,7 +125,7 @@ export const orderApi = {
   // GET /api/orders/my
   async getMyOrders() {
     try {
-      const response = await apiClient.get('/orders/my')
+      const response = await apiClient.get('/orders')
       return response.data
     } catch (error) {
       console.error('Unable to load orders:', error)
