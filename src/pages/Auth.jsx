@@ -20,7 +20,7 @@ export default function Auth({ register = false }) {
 
   const title = register ? 'Create your account' : 'Welcome back'
 
-  // Update input values
+  // Handle input changes
   const handleChange = (e) => {
     const { name, value } = e.target
 
@@ -30,56 +30,65 @@ export default function Auth({ register = false }) {
     })
   }
 
-  // Submit registration form
-  const handleSubmit = async (e) => {
-    e.preventDefault()
+  // Handle form submission
+const handleSubmit = async (e) => {
+  e.preventDefault()
 
-    setSuccess('')
-    setError('')
+  setSuccess('')
+  setError('')
 
-    // Login API has not been implemented yet
-    if (!register) {
-      setError('Login functionality is not available yet.')
-      return
-    }
+  try {
+    setLoading(true)
 
-    try {
-      setLoading(true)
+    let response
 
-      // Send registration data to Spring Boot
-      const response = await authApi.register(formData)
-
-      console.log('Registration successful:', response)
+    if (register) {
+      // Register a new customer
+      response = await authApi.register(formData)
 
       setSuccess('Your account has been created successfully!')
 
-      // Clear the form
+    } else {
+      // Login an existing customer
+      response = await authApi.login({
+        email: formData.email,
+        password: formData.password
+      })
+
+      console.log('Login successful:', response)
+
+      setSuccess('Login successful! Welcome back.')
+
+      // Redirect to homepage
+      window.location.href = '/'
+    }
+
+    // Clear form after registration
+    if (register) {
       setFormData({
         name: '',
         email: '',
         password: ''
       })
-
-    } catch (error) {
-
-  console.error('Registration error:', error)
-
-  console.log('Backend response:', error.response?.data)
-  console.log('HTTP status:', error.response?.status)
-
-  const errorMessage =
-    error.response?.data?.detail ||
-    error.response?.data?.message ||
-    error.response?.data?.title ||
-    error.message ||
-    'Registration failed. Please try again.'
-
-  setError(errorMessage)
-
-}finally {
-      setLoading(false)
     }
+
+  } catch (error) {
+
+    console.error('Authentication error:', error)
+    console.log('Backend response:', error.response?.data)
+
+    const errorMessage =
+      error.response?.data?.detail ||
+      error.response?.data?.message ||
+      error.response?.data?.title ||
+      'Something went wrong. Please try again.'
+
+    setError(errorMessage)
+
+  } finally {
+    setLoading(false)
   }
+}
 
   return (
     <main className="container-page flex min-h-[65vh] items-center justify-center py-14">
@@ -88,7 +97,6 @@ export default function Auth({ register = false }) {
         onSubmit={handleSubmit}
         className="w-full max-w-md rounded-3xl border border-line p-8 shadow-soft"
       >
-
         <p className="eyebrow text-center text-rose">
           Lumière account
         </p>
@@ -103,59 +111,54 @@ export default function Auth({ register = false }) {
             : 'Sign in to view your account and orders.'}
         </p>
 
-        {/* Success message */}
-        {success && (
-          <p className="mt-5 rounded-lg bg-green-100 p-3 text-center text-sm text-green-700">
-            {success}
-          </p>
-        )}
-
-        {/* Error message */}
-        {error && (
-          <p className="mt-5 rounded-lg bg-red-100 p-3 text-center text-sm text-red-700">
-            {error}
-          </p>
-        )}
-
-        {/* Full name */}
         {register && (
           <input
-            required
             name="name"
             value={formData.name}
             onChange={handleChange}
+            required
             className="field mt-7"
             placeholder="Full name"
           />
         )}
 
-        {/* Email */}
         <input
-          required
           name="email"
           type="email"
           value={formData.email}
           onChange={handleChange}
+          required
           className="field mt-5"
           placeholder="Email address"
         />
 
-        {/* Password */}
         <input
-          required
           name="password"
           type="password"
           value={formData.password}
           onChange={handleChange}
+          required
+          minLength={8}
           className="field mt-3"
           placeholder="Password"
         />
 
-        {/* Submit button */}
+        {success && (
+          <p className="mt-4 text-sm text-green-600">
+            {success}
+          </p>
+        )}
+
+        {error && (
+          <p className="mt-4 text-sm text-red-600">
+            {error}
+          </p>
+        )}
+
         <button
           type="submit"
           disabled={loading}
-          className="btn-primary mt-6 w-full disabled:cursor-not-allowed disabled:opacity-50"
+          className="btn-primary mt-6 w-full disabled:opacity-50"
         >
           {loading
             ? 'Please wait...'
@@ -164,9 +167,7 @@ export default function Auth({ register = false }) {
               : 'Sign in'}
         </button>
 
-        {/* Navigation */}
         <p className="mt-5 text-center text-xs text-muted">
-
           {register
             ? 'Already have an account?'
             : 'New to Lumière?'}
@@ -179,11 +180,9 @@ export default function Auth({ register = false }) {
           >
             {register ? 'Sign in' : 'Create an account'}
           </Link>
-
         </p>
 
       </form>
-
     </main>
   )
 }
