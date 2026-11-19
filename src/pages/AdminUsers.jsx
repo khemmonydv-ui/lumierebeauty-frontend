@@ -47,21 +47,28 @@ export default function AdminUsers() {
   }
 
   // 1. GET ALL USERS
-  const loadUsers = async () => {
-    try {
-      setLoading(true)
-      setError('')
+ // 1. GET ALL USERS
+const loadUsers = async () => {
+  try {
+    setLoading(true)
+    setError('')
 
-      const data = await adminUserApi.getAll()
+    const data = await adminUserApi.getAll()
 
-      setUsers(data)
-    } catch (error) {
-      console.error('Unable to load users:', error)
-      setError(getErrorMessage(error))
-    } finally {
-      setLoading(false)
-    }
+    // Hide the original owner account
+    const visibleUsers = data.filter(
+      user => user.email?.trim().toLowerCase() !== 'admin@lumierebeauty.com'
+    )
+
+    setUsers(visibleUsers)
+
+  } catch (error) {
+    console.error('Unable to load users:', error)
+    setError(getErrorMessage(error))
+  } finally {
+    setLoading(false)
   }
+}
 
   // Load users when page opens
   useEffect(() => {
@@ -217,13 +224,7 @@ export default function AdminUsers() {
           </p>
         </div>
 
-        <div className="rounded-2xl border border-line bg-white p-5">
-          <p className="text-xs text-muted">Administrators</p>
-
-          <p className="mt-2 font-display text-3xl text-wine">
-            {users.filter(user => user.role === 'ADMIN').length}
-          </p>
-        </div>
+  
 
         <div className="rounded-2xl border border-line bg-white p-5">
           <p className="text-xs text-muted">Active accounts</p>
@@ -520,16 +521,7 @@ export default function AdminUsers() {
 
       </div>
 
-      {/* FOOTER INFORMATION */}
-      <p className="mt-4 rounded-xl border border-[#E8DED4] bg-[#F5F3E9] p-4 text-xs leading-6 text-muted">
 
-        <strong className="text-wine">
-          Account management:
-        </strong>
-
-        {' '}User records are now loaded and managed through your Spring Boot API and PostgreSQL database.
-
-      </p>
 
     </div>
   )
