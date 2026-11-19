@@ -1,12 +1,22 @@
 import { useMemo, useState } from 'react'
+import { useEffect } from 'react'
 import { Search, SlidersHorizontal } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 import { useShop } from '../context/ShopContext'
-import { categories, brands } from '../data/products'
+import { categories } from "../data/products";
+import { brandApi } from "../services/api";
 import ProductCard from '../components/ProductCard'
 
 export default function Shop() {
   const { products } = useShop()
+  const [brands, setBrands] = useState(["All"]);
+
+  useEffect(() => {
+    brandApi
+      .getAll()
+      .then((names) => setBrands(["All", ...names]))
+      .catch((error) => console.error("Could not load brands", error));
+  }, []);
   const [params, setParams] = useSearchParams()
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState('featured')
