@@ -139,31 +139,43 @@ export const brandApi = {
     return response.data.map(b => b.name)
   }
 }
+
+// ---------------------------------------------------------
+// categoryApi: used by the category dropdown in the admin form
+// ---------------------------------------------------------
+export const categoryApi = {
+  // GET /api/categories -> [{ id: 1, name: "Skincare" }, ...]
+  // The dropdown only needs the names, e.g. ["Skincare", "Makeup"].
+  async getAll() {
+    const response = await apiClient.get('/categories')
+    return response.data.map(c => c.name)
+  }
+}
 //Dariya
 
 export const authApi = {
-  // POST /api/auth/login
+  // POST /api/auth/loginMake
   async login(credentials) {
     try {
-      const response = await apiClient.post('/auth/login', credentials)
-      return response.data
+      const response = await apiClient.post("/auth/login", credentials);
+      return response.data;
     } catch (error) {
-      console.error('Login failed:', error)
-      throw error
+      console.error("Login failed:", error);
+      throw error;
     }
   },
 
   // POST /api/auth/register
   async register(accountData) {
     try {
-      const response = await apiClient.post('/auth/register', accountData)
-      return response.data
+      const response = await apiClient.post("/auth/register", accountData);
+      return response.data;
     } catch (error) {
-      console.error('Registration failed:', error)
-      throw error
+      console.error("Registration failed:", error);
+      throw error;
     }
-  }
-}
+  },
+};
 
 export const orderApi = {
   // POST /api/orders
