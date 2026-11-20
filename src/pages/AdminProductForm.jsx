@@ -37,7 +37,8 @@ export default function AdminProductForm() {
   useEffect(() => {
     categoryApi
       .getAll()
-      .then((names) => setCategories(names))
+      // categoryApi returns objects { id, name, ... }; the dropdown needs only the names
+      .then((data) => setCategories(data.map((c) => c.name)))
       .catch((err) => console.error("Could not load categories", err));
   }, []);
   useEffect(() => {
@@ -50,10 +51,15 @@ export default function AdminProductForm() {
     const { name, value, type, checked } = e.target;
     setForm((f) => ({ ...f, [name]: type === "checkbox" ? checked : value }));
   };
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
-    if (!form.name.trim() || !form.price || !form.stock) {
+    if (!form.name.trim() || form.price === "" || form.stock === "") {
       setError("Please complete the product name, price and stock.");
+      return;
+    }
+    // Validation: price cannot be negative
+    if (Number(form.price) < 0) {
+      setError("Price cannot be negative.");
       return;
     }
     const product = {
@@ -62,8 +68,15 @@ export default function AdminProductForm() {
       price: Number(form.price),
       stock: Number(form.stock),
     };
-    saveProduct(product);
-    navigate("/admin/products");
+    // Wait for the backend. If it refuses (e.g. 400), show its message
+    // and stay on the form instead of leaving silently.
+    try {
+      await saveProduct(product);
+      navigate("/admin/products");
+    } catch (err) {
+      const message = err.response?.data;
+      setError(typeof message === "string" ? message : "Could not save the product.");
+    }
   };
   return (
     <>

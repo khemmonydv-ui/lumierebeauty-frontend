@@ -44,6 +44,8 @@ async function toBackend(p) {
     description: p.description,
     price: Number(p.price),
     quantity: Number(p.stock),
+    // Send the picture so the backend saves it
+    imageUrl: p.imageUrl,
     brand: brand ? { id: brand.id } : null,
     category: category ? { id: category.id } : null
   }
