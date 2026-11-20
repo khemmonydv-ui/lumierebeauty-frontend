@@ -112,24 +112,24 @@ export const categoryApi = {
 export const authApi = {
   async login(credentials) {
     try {
-      const response = await apiClient.post('/auth/login', credentials)
-      return response.data
+      const response = await apiClient.post("/auth/login", credentials);
+      return response.data;
     } catch (error) {
-      console.error('Login failed:', error)
-      throw error
+      console.error("Login failed:", error);
+      throw error;
     }
   },
 
   async register(accountData) {
     try {
-      const response = await apiClient.post('/auth/register', accountData)
-      return response.data
+      const response = await apiClient.post("/auth/register", accountData);
+      return response.data;
     } catch (error) {
-      console.error('Registration failed:', error)
-      throw error
+      console.error("Registration failed:", error);
+      throw error;
     }
-  }
-}
+  },
+};
 
 // ---------------------------------------------------------
 // orderApi

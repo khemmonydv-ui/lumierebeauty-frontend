@@ -2,11 +2,12 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Save } from "lucide-react";
 import { useShop } from "../context/ShopContext";
+import { brandApi, categoryApi } from "../services/api";
 const empty = {
   id: "",
   name: "",
   brand: "",
-  category: "Skincare",
+  category: "",
   price: "",
   stock: "",
   status: "Active",
@@ -21,6 +22,24 @@ export default function AdminProductForm() {
   const navigate = useNavigate();
   const [form, setForm] = useState(empty);
   const [error, setError] = useState("");
+
+  // Load the brand names from the backend for the dropdown
+  const [brands, setBrands] = useState([]);
+  useEffect(() => {
+    brandApi
+      .getAll()
+      .then((names) => setBrands(names))
+      .catch((err) => console.error("Could not load brands", err));
+  }, []);
+
+  // Load the category names from the backend for the dropdown
+  const [categories, setCategories] = useState([]);
+  useEffect(() => {
+    categoryApi
+      .getAll()
+      .then((names) => setCategories(names))
+      .catch((err) => console.error("Could not load categories", err));
+  }, []);
   useEffect(() => {
     if (editing) {
       const found = products.find((p) => p.id === id);
@@ -89,10 +108,12 @@ export default function AdminProductForm() {
               value={form.category}
               onChange={change}
             >
-              <option>Skincare</option>
-              <option>Makeup</option>
-              <option>Haircare</option>
-              <option>Body</option>
+              <option value="">-- Choose a category --</option>
+              {categories.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
             </select>
           </label>
           <label className="text-xs font-semibold">
@@ -103,13 +124,12 @@ export default function AdminProductForm() {
               value={form.brand}
               onChange={change}
             >
-              <option>Dior</option>
-              <option>Rare Beauty</option>
-              <option>Fenty Beauty</option>
-              <option>The Ordinary</option>
-              <option>CeraVe</option>
-              <option>Beauty of Josseon</option>
-              <option>Laneige</option>
+              <option value="">-- Choose a brand --</option>
+              {brands.map((b) => (
+                <option key={b} value={b}>
+                  {b}
+                </option>
+              ))}
             </select>
           </label>
           <label className="text-xs font-semibold">
