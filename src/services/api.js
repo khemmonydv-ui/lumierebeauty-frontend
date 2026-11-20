@@ -1,11 +1,10 @@
 import axios from 'axios'
 
 // Base URL of the Java Spring Boot REST API.
-// Change VITE_API_BASE_URL in the .env file when the backend is ready.
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api'
 
-// Create one Axios instance so all API requests share the same configuration.
+// Create one Axios instance.
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
   headers: {
@@ -14,75 +13,96 @@ const apiClient = axios.create({
   timeout: 10000
 })
 
-// Axios returns the response body inside response.data.
-// async/await makes asynchronous HTTP requests easier to read.
-export const productApi = {
-  // GET /api/products
-  async getAll() {
-    try {
-      const response = await apiClient.get('/products')
-      return response.data
-    } catch (error) {
-      console.error('Unable to load products:', error)
-      throw error
-    }
-  },
+// ---------------------------------------------------------
+// toFrontend: backend product -> frontend product
+// ---------------------------------------------------------
+const toFrontend = (p) => ({
+  id: String(p.id),
+  name: p.name ?? '',
+  brand: p.brand?.name ?? '',
+  category: p.category?.name ?? '',
+  price: Number(p.price ?? 0),
+  stock: p.quantity ?? 0,
+  status: p.status ?? 'Active',
+  featured: p.featured ?? false,
+  imageUrl: p.imageUrl || '/images/serum.svg',
+  description: p.description ?? ''
+})
 
-  // GET /api/products/{id}
-  async getById(id) {
-    try {
-      const response = await apiClient.get(`/products/${id}`)
-      return response.data
-    } catch (error) {
-      console.error(`Unable to load product ${id}:`, error)
-      throw error
-    }
-  },
+// ---------------------------------------------------------
+// toBackend: frontend form -> backend product
+// ---------------------------------------------------------
+async function toBackend(p) {
+  const brands = (await apiClient.get('/brands')).data
+  const categories = (await apiClient.get('/categories')).data
 
-  // POST /api/products
-  async create(productData) {
-    try {
-      const response = await apiClient.post('/products', productData)
-      return response.data
-    } catch (error) {
-      console.error('Unable to create product:', error)
-      throw error
-    }
-  },
+  const brand = brands.find(b => b.name === p.brand)
+  const category = categories.find(c => c.name === p.category)
 
-  // PUT /api/products/{id}
-  async update(id, productData) {
-    try {
-      const response = await apiClient.put(`/products/${id}`, productData)
-      return response.data
-    } catch (error) {
-      console.error(`Unable to update product ${id}:`, error)
-      throw error
-    }
-  },
-
-  // DELETE /api/products/{id}
-  async remove(id) {
-    try {
-      const response = await apiClient.delete(`/products/${id}`)
-      return response.data
-    } catch (error) {
-      console.error(`Unable to delete product ${id}:`, error)
-      throw error
-    }
+  return {
+    name: p.name,
+    description: p.description,
+    price: Number(p.price),
+    quantity: Number(p.stock),
+    brand: brand ? { id: brand.id } : null,
+    category: category ? { id: category.id } : null
   }
 }
 
-export const brandApi = {
-  // GET /api/brands
+// ---------------------------------------------------------
+// productApi
+// ---------------------------------------------------------
+export const productApi = {
   async getAll() {
-    try {
-      const response = await apiClient.get('/brands')
-      return response.data
-    } catch (error) {
-      console.error('Unable to load brands:', error)
-      throw error
-    }
+    const response = await apiClient.get('/products')
+    return response.data.map(toFrontend)
+  },
+
+  async getById(id) {
+    const response = await apiClient.get(`/products/${id}`)
+    return toFrontend(response.data)
+  },
+
+  async create(product) {
+    const response = await apiClient.post(
+      '/products',
+      await toBackend(product)
+    )
+
+    return toFrontend(response.data)
+  },
+
+  async update(id, product) {
+    const response = await apiClient.put(
+      `/products/${id}`,
+      await toBackend(product)
+    )
+
+    return toFrontend(response.data)
+  },
+
+  async remove(id) {
+    await apiClient.delete(`/products/${id}`)
+  }
+}
+
+// ---------------------------------------------------------
+// brandApi
+// ---------------------------------------------------------
+export const brandApi = {
+  async getAll() {
+    const response = await apiClient.get('/brands')
+    return response.data.map(b => b.name)
+  }
+}
+
+// ---------------------------------------------------------
+// categoryApi
+// ---------------------------------------------------------
+export const categoryApi = {
+  async getAll() {
+    const response = await apiClient.get('/categories')
+    return response.data
   }
 }
 
@@ -195,15 +215,14 @@ export const adminUserApi = {
       console.error(`Unable to delete user ${id}:`, error)
       throw error
     }
-  }
-}
+  },
+};
 
 
 
 
 
 export const orderApi = {
-  // POST /api/orders
   async create(orderData) {
     try {
       const response = await apiClient.post('/orders', orderData)
@@ -214,10 +233,9 @@ export const orderApi = {
     }
   },
 
-  // GET /api/orders/my
   async getMyOrders() {
     try {
-      const response = await apiClient.get('/orders/my')
+      const response = await apiClient.get('/orders')
       return response.data
     } catch (error) {
       console.error('Unable to load orders:', error)
