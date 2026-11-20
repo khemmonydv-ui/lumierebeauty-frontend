@@ -1,9 +1,17 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { authApi } from '../services/api'
+import { useShop } from '../context/ShopContext'
 
 export default function Auth({ register = false, admin = false }) {
+
   const navigate = useNavigate()
+  const location = useLocation()
+
+  const {
+    setUser,
+    addToCart
+  } = useShop()
 
   const [formData, setFormData] = useState({
     name: '',
@@ -24,10 +32,10 @@ export default function Auth({ register = false, admin = false }) {
   const handleChange = (e) => {
     const { name, value } = e.target
 
-    setFormData({
-      ...formData,
+    setFormData((current) => ({
+      ...current,
       [name]: value
-    })
+    }))
   }
 
   const handleSubmit = async (e) => {
@@ -39,10 +47,17 @@ export default function Auth({ register = false, admin = false }) {
     try {
       setLoading(true)
 
+      // ================================================
+      // REGISTER
+      // ================================================
+
       if (register) {
+
         await authApi.register(formData)
 
-        setSuccess('Your account has been created successfully!')
+        setSuccess(
+          'Your account has been created successfully! Please sign in.'
+        )
 
         setFormData({
           name: '',
@@ -53,6 +68,10 @@ export default function Auth({ register = false, admin = false }) {
         return
       }
 
+      // ================================================
+      // LOGIN
+      // ================================================
+
       const response = await authApi.login({
         email: formData.email,
         password: formData.password
@@ -60,7 +79,7 @@ export default function Auth({ register = false, admin = false }) {
 
       console.log('Login successful:', response)
 
-      // Check whether the account has the correct role
+      // Check account role.
       if (admin && response.role !== 'ADMIN') {
         setError('Access denied. Admin account required.')
         return
@@ -71,15 +90,55 @@ export default function Auth({ register = false, admin = false }) {
         return
       }
 
+      // Save logged-in user.
+      setUser(response)
+
       setSuccess('Login successful!')
+
+      // ================================================
+      // ADMIN LOGIN
+      // ================================================
 
       if (admin) {
         navigate('/admin')
-      } else {
-        navigate('/')
+        return
       }
 
+      // ================================================
+      // CUSTOMER LOGIN
+      // ================================================
+
+      // Check whether the customer selected a product
+      // before going to the login page.
+      const pendingProduct = sessionStorage.getItem(
+        'lumiere-pending-cart-product'
+      )
+
+      if (pendingProduct) {
+        try {
+          const product = JSON.parse(pendingProduct)
+
+          // Add the selected product to the cart.
+          addToCart(product)
+
+          // Remove the temporary saved product.
+          sessionStorage.removeItem(
+            'lumiere-pending-cart-product'
+          )
+        } catch (error) {
+          console.error('Could not restore selected product:', error)
+
+          sessionStorage.removeItem(
+            'lumiere-pending-cart-product'
+          )
+        }
+      }
+
+      // Return to the Shop page.
+      navigate(location.state?.from || '/shop')
+
     } catch (error) {
+
       console.error('Authentication error:', error)
 
       const errorMessage =
@@ -97,10 +156,12 @@ export default function Auth({ register = false, admin = false }) {
 
   return (
     <main className="container-page flex min-h-[65vh] items-center justify-center py-14">
+
       <form
         onSubmit={handleSubmit}
         className="w-full max-w-md rounded-3xl border border-line p-8 shadow-soft"
       >
+
         <p className="eyebrow text-center text-rose">
           {admin ? 'Lumière Administration' : 'Lumière account'}
         </p>
@@ -175,19 +236,26 @@ export default function Auth({ register = false, admin = false }) {
 
         {!admin && (
           <p className="mt-5 text-center text-xs text-muted">
+
             {register
               ? 'Already have an account?'
               : 'New to Lumière?'}
+
             {' '}
+
             <Link
               className="font-semibold text-rose"
               to={register ? '/login' : '/register'}
+              state={location.state}
             >
               {register ? 'Sign in' : 'Create an account'}
             </Link>
+
           </p>
         )}
+
       </form>
+
     </main>
   )
 }

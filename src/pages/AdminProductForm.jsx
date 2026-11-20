@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Save } from "lucide-react";
 import { useShop } from "../context/ShopContext";
 import { brandApi, categoryApi } from "../services/api";
+
 const empty = {
   id: "",
   name: "",
@@ -15,25 +16,33 @@ const empty = {
   imageUrl: "",
   description: "",
 };
+
 export default function AdminProductForm() {
   const { id } = useParams();
   const editing = Boolean(id);
+
   const { products, saveProduct } = useShop();
   const navigate = useNavigate();
+
   const [form, setForm] = useState(empty);
   const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
 
-  // Load the brand names from the backend for the dropdown
   const [brands, setBrands] = useState([]);
+  const [categories, setCategories] = useState([]);
+
+  // Load brands
   useEffect(() => {
     brandApi
       .getAll()
-      .then((names) => setBrands(names))
-      .catch((err) => console.error("Could not load brands", err));
+      .then(setBrands)
+      .catch((err) => {
+        console.error("Could not load brands:", err);
+        setError("Could not load brands.");
+      });
   }, []);
 
-  // Load the category names from the backend for the dropdown
-  const [categories, setCategories] = useState([]);
+  // Load categories
   useEffect(() => {
     categoryApi
       .getAll()
@@ -41,15 +50,35 @@ export default function AdminProductForm() {
       .then((data) => setCategories(data.map((c) => c.name)))
       .catch((err) => console.error("Could not load categories", err));
   }, []);
+
+  // Load product when editing
   useEffect(() => {
-    if (editing) {
-      const found = products.find((p) => p.id === id);
-      if (found) setForm({ ...found });
+    if (!editing) return;
+
+    const found = products.find(
+      (p) => String(p.id) === String(id)
+    );
+
+    if (found) {
+      setForm({
+        ...empty,
+        ...found,
+        brand: found.brandId || "",
+        category: found.categoryId || "",
+        price: found.price ?? "",
+        stock: found.stock ?? "",
+      });
     }
   }, [id, editing, products]);
+
+  // Handle input changes
   const change = (e) => {
     const { name, value, type, checked } = e.target;
-    setForm((f) => ({ ...f, [name]: type === "checkbox" ? checked : value }));
+
+    setForm((previous) => ({
+      ...previous,
+      [name]: type === "checkbox" ? checked : value,
+    }));
   };
   const submit = async (e) => {
     e.preventDefault();
@@ -64,9 +93,12 @@ export default function AdminProductForm() {
     }
     const product = {
       ...form,
-      id: editing ? id : `P-${Date.now().toString().slice(-6)}`,
+      id: editing ? id : "",
+      name: form.name.trim(),
       price: Number(form.price),
       stock: Number(form.stock),
+      brand: form.brand,
+      category: form.category,
     };
     // Wait for the backend. If it refuses (e.g. 400), show its message
     // and stay on the form instead of leaving silently.
@@ -78,6 +110,7 @@ export default function AdminProductForm() {
       setError(typeof message === "string" ? message : "Could not save the product.");
     }
   };
+
   return (
     <>
       <Link
@@ -86,17 +119,21 @@ export default function AdminProductForm() {
       >
         <ArrowLeft size={15} /> Back to products
       </Link>
+
       <div className="mt-5">
         <p className="eyebrow text-rose">
           {editing ? "Catalogue update" : "New catalogue item"}
         </p>
+
         <h1 className="mt-2 font-display text-4xl">
           {editing ? "Edit product" : "Add product"}
         </h1>
+
         <p className="mt-2 text-sm text-muted">
           Enter the product information below.
         </p>
       </div>
+
       <form
         onSubmit={submit}
         className="mt-8 max-w-3xl rounded-2xl border border-line bg-white p-6 md:p-8"
@@ -113,6 +150,7 @@ export default function AdminProductForm() {
               placeholder="e.g. Daily Hydrating Serum"
             />
           </label>
+
           <label className="text-xs font-semibold">
             Category
             <select
@@ -122,13 +160,15 @@ export default function AdminProductForm() {
               onChange={change}
             >
               <option value="">-- Choose a category --</option>
+
               {categories.map((c) => (
-                <option key={c} value={c}>
-                  {c}
+                <option key={c.id} value={String(c.id)}>
+                  {c.name}
                 </option>
               ))}
             </select>
           </label>
+
           <label className="text-xs font-semibold">
             Brand
             <select
@@ -138,13 +178,15 @@ export default function AdminProductForm() {
               onChange={change}
             >
               <option value="">-- Choose a brand --</option>
+
               {brands.map((b) => (
-                <option key={b} value={b}>
-                  {b}
+                <option key={b.id} value={String(b.id)}>
+                  {b.name}
                 </option>
               ))}
             </select>
           </label>
+
           <label className="text-xs font-semibold">
             Price (USD) *
             <input
@@ -159,6 +201,7 @@ export default function AdminProductForm() {
               placeholder="0.00"
             />
           </label>
+
           <label className="text-xs font-semibold">
             Stock quantity *
             <input
@@ -172,6 +215,7 @@ export default function AdminProductForm() {
               placeholder="0"
             />
           </label>
+
           <label className="text-xs font-semibold">
             Status
             <select
@@ -180,10 +224,11 @@ export default function AdminProductForm() {
               value={form.status}
               onChange={change}
             >
-              <option>Active</option>
-              <option>Draft</option>
+              <option value="Active">Active</option>
+              <option value="Draft">Draft</option>
             </select>
           </label>
+
           <label className="text-xs font-semibold md:col-span-2">
             Image URL
             <input
@@ -194,6 +239,7 @@ export default function AdminProductForm() {
               placeholder="https://example.com/product.jpg"
             />
           </label>
+
           <label className="text-xs font-semibold md:col-span-2">
             Description
             <textarea
@@ -204,21 +250,32 @@ export default function AdminProductForm() {
               placeholder="Describe the product..."
             />
           </label>
+
           <label className="flex items-center gap-2 text-sm md:col-span-2">
             <input
               type="checkbox"
               name="featured"
               checked={Boolean(form.featured)}
               onChange={change}
-            />{" "}
+            />
             Feature this product on the home page
           </label>
         </div>
-        {error && <p className="mt-4 text-sm text-rose">{error}</p>}
+
+        {error && (
+          <p className="mt-4 text-sm text-rose">{error}</p>
+        )}
+
         <div className="mt-7 flex flex-wrap gap-3 border-t border-line pt-6">
-          <button className="btn-primary">
-            <Save size={16} /> Save product
+          <button
+            type="submit"
+            className="btn-primary"
+            disabled={saving}
+          >
+            <Save size={16} />
+            {saving ? "Saving..." : "Save product"}
           </button>
+
           <Link to="/admin/products" className="btn-outline">
             Cancel
           </Link>

@@ -1,10 +1,12 @@
 import axios from 'axios'
 
-// Base URL of the Java Spring Boot REST API.
+// =========================================================
+// 1. AXIOS CONFIGURATION
+// =========================================================
+
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api'
 
-// Create one Axios instance.
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
   headers: {
@@ -13,35 +15,56 @@ const apiClient = axios.create({
   timeout: 10000
 })
 
-// ---------------------------------------------------------
-// toFrontend: backend product -> frontend product
-// ---------------------------------------------------------
+// =========================================================
+// 2. PRODUCT CONVERSION
+// =========================================================
+
+// Convert backend product into frontend product.
 const toFrontend = (p) => ({
-  id: String(p.id),
+  id: String(p.id ?? ''),
   name: p.name ?? '',
+
   brand: p.brand?.name ?? '',
+  brandId: p.brand?.id ? String(p.brand.id) : '',
+
   category: p.category?.name ?? '',
+  categoryId: p.category?.id ? String(p.category.id) : '',
+
   price: Number(p.price ?? 0),
-  stock: p.quantity ?? 0,
+  stock: Number(p.quantity ?? 0),
+
   status: p.status ?? 'Active',
   featured: p.featured ?? false,
+
   imageUrl: p.imageUrl || '/images/serum.svg',
   description: p.description ?? ''
 })
 
-// ---------------------------------------------------------
-// toBackend: frontend form -> backend product
-// ---------------------------------------------------------
-async function toBackend(p) {
-  const brands = (await apiClient.get('/brands')).data
-  const categories = (await apiClient.get('/categories')).data
+// Convert frontend product into backend product.
+//
+// The frontend can send either:
+// brand: "Dior"
+// brand: { id: 1 }
+//
+// Or:
+// brandId: "1"
+//
+// The same applies to category.
 
-  const brand = brands.find(b => b.name === p.brand)
-  const category = categories.find(c => c.name === p.category)
+const toBackend = (p) => {
+  const brandId =
+    typeof p.brand === 'object'
+      ? p.brand?.id
+      : p.brandId || p.brand
+
+  const categoryId =
+    typeof p.category === 'object'
+      ? p.category?.id
+      : p.categoryId || p.category
 
   return {
     name: p.name,
-    description: p.description,
+    description: p.description ?? '',
     price: Number(p.price),
     quantity: Number(p.stock),
     // Send the picture so the backend saves it
@@ -51,80 +74,172 @@ async function toBackend(p) {
   }
 }
 
-// ---------------------------------------------------------
-// productApi
-// ---------------------------------------------------------
+// =========================================================
+// 3. PRODUCT API
+// =========================================================
+
 export const productApi = {
+
+  // GET /api/products
+  // Get all products.
   async getAll() {
-    const response = await apiClient.get('/products')
-    return response.data.map(toFrontend)
+    try {
+      const response = await apiClient.get('/products')
+      return response.data.map(toFrontend)
+    } catch (error) {
+      console.error('Unable to load products:', error)
+      throw error
+    }
   },
 
+  // GET /api/products/{id}
+  // Get one product.
   async getById(id) {
-    const response = await apiClient.get(`/products/${id}`)
-    return toFrontend(response.data)
+    try {
+      const response = await apiClient.get(`/products/${id}`)
+      return toFrontend(response.data)
+    } catch (error) {
+      console.error(`Unable to load product ${id}:`, error)
+      throw error
+    }
   },
 
+  // POST /api/products
+  // Create a new product.
   async create(product) {
-    const response = await apiClient.post(
-      '/products',
-      await toBackend(product)
-    )
+    try {
+      const response = await apiClient.post(
+        '/products',
+        toBackend(product)
+      )
 
-    return toFrontend(response.data)
+      return toFrontend(response.data)
+    } catch (error) {
+      console.error('Unable to create product:', error)
+      throw error
+    }
   },
 
+  // PUT /api/products/{id}
+  // Update an existing product.
   async update(id, product) {
-    const response = await apiClient.put(
-      `/products/${id}`,
-      await toBackend(product)
-    )
+    try {
+      const response = await apiClient.put(
+        `/products/${id}`,
+        toBackend(product)
+      )
 
-    return toFrontend(response.data)
+      return toFrontend(response.data)
+    } catch (error) {
+      console.error(`Unable to update product ${id}:`, error)
+      throw error
+    }
   },
 
+  // DELETE /api/products/{id}
+  // Delete a product.
   async remove(id) {
-    await apiClient.delete(`/products/${id}`)
+    try {
+      await apiClient.delete(`/products/${id}`)
+      return true
+    } catch (error) {
+      console.error(`Unable to delete product ${id}:`, error)
+      throw error
+    }
+  },
+
+  // GET /api/products/category?name=Skincare
+  // Filter products by category name.
+  async getByCategory(name) {
+    try {
+      const response = await apiClient.get('/products/category', {
+        params: { name }
+      })
+
+      return response.data.map(toFrontend)
+    } catch (error) {
+      console.error('Unable to filter products by category:', error)
+      throw error
+    }
   }
 }
 
-// ---------------------------------------------------------
-// brandApi
-// ---------------------------------------------------------
+// =========================================================
+// 4. BRAND API
+// =========================================================
+
 export const brandApi = {
+
+  // GET /api/brands
+  // Return complete brand objects, including id and name.
   async getAll() {
-    const response = await apiClient.get('/brands')
-    return response.data.map(b => b.name)
+    try {
+      const response = await apiClient.get('/brands')
+      return response.data
+    } catch (error) {
+      console.error('Unable to load brands:', error)
+      throw error
+    }
   }
 }
 
-// ---------------------------------------------------------
-// categoryApi
-// ---------------------------------------------------------
+// =========================================================
+// 5. CATEGORY API
+// =========================================================
+
 export const categoryApi = {
+
+  // GET /api/categories
+  // Get all categories.
   async getAll() {
-    const response = await apiClient.get('/categories')
-    return response.data
+    try {
+      const response = await apiClient.get('/categories')
+      return response.data
+    } catch (error) {
+      console.error('Unable to load categories:', error)
+      throw error
+    }
   }
 }
 
+// =========================================================
+// 6. AUTHENTICATION API
+// =========================================================
 
 export const authApi = {
+
+  // POST /api/users
+  // Register a new account.
   async register(accountData) {
-    const response = await apiClient.post('/users', accountData)
-    return response.data
+    try {
+      const response = await apiClient.post('/users', accountData)
+      return response.data
+    } catch (error) {
+      console.error('Unable to register:', error)
+      throw error
+    }
   },
 
+  // POST /api/users/login
+  // Login.
   async login(credentials) {
-    const response = await apiClient.post('/users/login', credentials)
-    return response.data
+    try {
+      const response = await apiClient.post('/users/login', credentials)
+      return response.data
+    } catch (error) {
+      console.error('Unable to login:', error)
+      throw error
+    }
   }
 }
+
+// =========================================================
+// 7. ADMIN USER API
+// =========================================================
 
 export const adminUserApi = {
 
   // GET /api/admin/users
-  // Get all users
   async getAll() {
     try {
       const response = await apiClient.get('/admin/users')
@@ -136,7 +251,6 @@ export const adminUserApi = {
   },
 
   // GET /api/admin/users/{id}
-  // Get user by ID
   async getById(id) {
     try {
       const response = await apiClient.get(`/admin/users/${id}`)
@@ -148,7 +262,6 @@ export const adminUserApi = {
   },
 
   // POST /api/admin/users
-  // Create a new customer or admin
   async create(userData) {
     try {
       const response = await apiClient.post('/admin/users', userData)
@@ -160,10 +273,13 @@ export const adminUserApi = {
   },
 
   // PUT /api/admin/users/{id}
-  // Update user information
   async update(id, userData) {
     try {
-      const response = await apiClient.put(`/admin/users/${id}`, userData)
+      const response = await apiClient.put(
+        `/admin/users/${id}`,
+        userData
+      )
+
       return response.data
     } catch (error) {
       console.error(`Unable to update user ${id}:`, error)
@@ -172,7 +288,6 @@ export const adminUserApi = {
   },
 
   // PATCH /api/admin/users/{id}/role
-  // Change user role
   async updateRole(id, role) {
     try {
       const response = await apiClient.patch(
@@ -182,6 +297,7 @@ export const adminUserApi = {
           params: { role }
         }
       )
+
       return response.data
     } catch (error) {
       console.error(`Unable to update role for user ${id}:`, error)
@@ -190,7 +306,6 @@ export const adminUserApi = {
   },
 
   // PATCH /api/admin/users/{id}/status
-  // Activate or suspend user
   async updateStatus(id, status) {
     try {
       const response = await apiClient.patch(
@@ -200,6 +315,7 @@ export const adminUserApi = {
           params: { status }
         }
       )
+
       return response.data
     } catch (error) {
       console.error(`Unable to update status for user ${id}:`, error)
@@ -208,7 +324,6 @@ export const adminUserApi = {
   },
 
   // DELETE /api/admin/users/{id}
-  // Delete user
   async remove(id) {
     try {
       const response = await apiClient.delete(`/admin/users/${id}`)
@@ -217,14 +332,17 @@ export const adminUserApi = {
       console.error(`Unable to delete user ${id}:`, error)
       throw error
     }
-  },
-};
+  }
+}
 
-
-
-
+// =========================================================
+// 8. ORDER API
+// =========================================================
 
 export const orderApi = {
+
+  // POST /api/orders
+  // Create an order.
   async create(orderData) {
     try {
       const response = await apiClient.post('/orders', orderData)
@@ -235,6 +353,8 @@ export const orderApi = {
     }
   },
 
+  // GET /api/orders
+  // Get current user's orders.
   async getMyOrders() {
     try {
       const response = await apiClient.get('/orders')
@@ -245,5 +365,9 @@ export const orderApi = {
     }
   }
 }
+
+// =========================================================
+// 9. EXPORT AXIOS INSTANCE
+// =========================================================
 
 export default apiClient
