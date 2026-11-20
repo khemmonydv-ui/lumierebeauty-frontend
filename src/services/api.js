@@ -106,34 +106,122 @@ export const categoryApi = {
   }
 }
 
-// ---------------------------------------------------------
-// authApi
-// ---------------------------------------------------------
+
 export const authApi = {
+  async register(accountData) {
+    const response = await apiClient.post('/users', accountData)
+    return response.data
+  },
+
   async login(credentials) {
+    const response = await apiClient.post('/users/login', credentials)
+    return response.data
+  }
+}
+
+export const adminUserApi = {
+
+  // GET /api/admin/users
+  // Get all users
+  async getAll() {
     try {
-      const response = await apiClient.post("/auth/login", credentials);
-      return response.data;
+      const response = await apiClient.get('/admin/users')
+      return response.data
     } catch (error) {
-      console.error("Login failed:", error);
-      throw error;
+      console.error('Unable to load users:', error)
+      throw error
     }
   },
 
-  async register(accountData) {
+  // GET /api/admin/users/{id}
+  // Get user by ID
+  async getById(id) {
     try {
-      const response = await apiClient.post("/auth/register", accountData);
-      return response.data;
+      const response = await apiClient.get(`/admin/users/${id}`)
+      return response.data
     } catch (error) {
-      console.error("Registration failed:", error);
-      throw error;
+      console.error(`Unable to load user ${id}:`, error)
+      throw error
+    }
+  },
+
+  // POST /api/admin/users
+  // Create a new customer or admin
+  async create(userData) {
+    try {
+      const response = await apiClient.post('/admin/users', userData)
+      return response.data
+    } catch (error) {
+      console.error('Unable to create user:', error)
+      throw error
+    }
+  },
+
+  // PUT /api/admin/users/{id}
+  // Update user information
+  async update(id, userData) {
+    try {
+      const response = await apiClient.put(`/admin/users/${id}`, userData)
+      return response.data
+    } catch (error) {
+      console.error(`Unable to update user ${id}:`, error)
+      throw error
+    }
+  },
+
+  // PATCH /api/admin/users/{id}/role
+  // Change user role
+  async updateRole(id, role) {
+    try {
+      const response = await apiClient.patch(
+        `/admin/users/${id}/role`,
+        null,
+        {
+          params: { role }
+        }
+      )
+      return response.data
+    } catch (error) {
+      console.error(`Unable to update role for user ${id}:`, error)
+      throw error
+    }
+  },
+
+  // PATCH /api/admin/users/{id}/status
+  // Activate or suspend user
+  async updateStatus(id, status) {
+    try {
+      const response = await apiClient.patch(
+        `/admin/users/${id}/status`,
+        null,
+        {
+          params: { status }
+        }
+      )
+      return response.data
+    } catch (error) {
+      console.error(`Unable to update status for user ${id}:`, error)
+      throw error
+    }
+  },
+
+  // DELETE /api/admin/users/{id}
+  // Delete user
+  async remove(id) {
+    try {
+      const response = await apiClient.delete(`/admin/users/${id}`)
+      return response.data
+    } catch (error) {
+      console.error(`Unable to delete user ${id}:`, error)
+      throw error
     }
   },
 };
 
-// ---------------------------------------------------------
-// orderApi
-// ---------------------------------------------------------
+
+
+
+
 export const orderApi = {
   async create(orderData) {
     try {

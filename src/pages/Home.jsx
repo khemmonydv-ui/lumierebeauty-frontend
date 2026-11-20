@@ -28,7 +28,7 @@ export default function Home() {
         <div className="relative mx-auto w-full max-w-[610px]">
           <div className="absolute -inset-5 rounded-[48%_48%_20px_20px] border border-gold/60"></div>
           <div className="relative overflow-hidden rounded-[48%_48%_18px_18px] bg-[#E4E8D5] shadow-luxe">
-            <img src="/images/hero.svg" alt="Lumière Beauty skincare and makeup collection" className="aspect-[5/4] w-full object-cover"/>
+            <img src="/images/goyoungjung.jpg" alt="Lumière Beauty skincare and makeup collection" className="aspect-[5/4] w-full object-cover"/>
           </div>
           <div className="absolute -bottom-5 -left-3 rounded-xl border border-line bg-[#FBF8F2]/95 px-5 py-3 shadow-soft md:left-2"><p className="eyebrow text-sage">The daily edit</p><p className="mt-1 font-display text-xl text-wine">A little luxury, every day.</p></div>
           <span className="absolute -right-2 top-8 h-14 w-14 rounded-full border border-gold/70 bg-[#F0F1E8]/70 md:-right-4"></span>

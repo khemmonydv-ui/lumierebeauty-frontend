@@ -30,5 +30,31 @@ function ScrollToTop() {
   return null
 }
 function StoreLayout(){return <><Header/><Routes><Route path="/" element={<Home/>}/><Route path="/shop" element={<Shop/>}/><Route path="/products/:id" element={<ProductDetail/>}/><Route path="/cart" element={<Cart/>}/><Route path="/checkout" element={<Checkout/>}/><Route path="/login" element={<Auth/>}/><Route path="/register" element={<Auth register/>}/><Route path="/orders" element={<Orders/>}/><Route path="/about" element={<About/>}/><Route path="/contact" element={<Contact/>}/><Route path="*" element={<Home/>}/></Routes><Footer/></>}
-function AppRoutes(){return <><ScrollToTop/><Routes><Route path="/admin" element={<AdminLayout/>}><Route index element={<AdminDashboard/>}/><Route path="products" element={<AdminProducts/>}/><Route path="products/new" element={<AdminProductForm/>}/><Route path="products/:id/edit" element={<AdminProductForm/>}/><Route path="users" element={<AdminUsers/>}/></Route><Route path="*" element={<StoreLayout/>}/></Routes></>}
+function AppRoutes() {
+  return (
+    <>
+      <ScrollToTop />
+
+      <Routes>
+        {/* Admin Login - separate from Admin Dashboard layout */}
+        <Route
+          path="/admin/login"
+          element={<Auth admin />}
+        />
+
+        {/* Admin Dashboard Layout */}
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<AdminDashboard />} />
+          <Route path="products" element={<AdminProducts />} />
+          <Route path="products/new" element={<AdminProductForm />} />
+          <Route path="products/:id/edit" element={<AdminProductForm />} />
+          <Route path="users" element={<AdminUsers />} />
+        </Route>
+
+        {/* Customer Store Pages */}
+        <Route path="*" element={<StoreLayout />} />
+      </Routes>
+    </>
+  )
+}
 export default function App(){return <ShopProvider><AppRoutes/></ShopProvider>}
