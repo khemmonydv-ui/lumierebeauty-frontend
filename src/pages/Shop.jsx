@@ -1,87 +1,141 @@
 import { useMemo, useState, useEffect } from 'react'
 import { Search, SlidersHorizontal } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
-import { categories, brands } from '../data/products'
+import { brands } from '../data/products'
 import ProductCard from '../components/ProductCard'
-import { productApi } from '../services/api'
+import { productApi, categoryApi } from '../services/api'
 
 export default function Shop() {
+  // Product states
   const [products, setProducts] = useState([])
+
+  // Category states
+  const [categories, setCategories] = useState([])
+  const [loadingCategories, setLoadingCategories] = useState(true)
+  const [categoryError, setCategoryError] = useState('')
+
+  // Search and filter states
   const [params, setParams] = useSearchParams()
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState('featured')
+
   const brand = params.get('brand') || 'All'
   const active = params.get('category') || 'All'
 
+  // ---------------------------------------------------------
+  // Fetch products from Spring Boot backend
+  // ---------------------------------------------------------
   useEffect(() => {
-    productApi.getAll()
-      .then((data) => {
+    const fetchProducts = async () => {
+      try {
+        const data = await productApi.getAll()
         setProducts(data)
-      })
-      .catch((error) => {
+      } catch (error) {
         console.error('Failed to load products from backend:', error)
-      });
+      }
+    }
+
+    fetchProducts()
   }, [])
 
+  // ---------------------------------------------------------
+  // Fetch categories from Spring Boot backend
+  // ---------------------------------------------------------
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setLoadingCategories(true)
+        setCategoryError('')
+
+        const data = await categoryApi.getAll()
+
+        setCategories(data)
+      } catch (error) {
+        console.error('Failed to load categories:', error)
+        setCategoryError('Failed to load categories.')
+      } finally {
+        setLoadingCategories(false)
+      }
+    }
+
+    fetchCategories()
+  }, [])
+
+  // ---------------------------------------------------------
+  // Select brand
+  // ---------------------------------------------------------
   const selectBrand = (value) => {
-    const next = new URLSearchParams(params);
+    const next = new URLSearchParams(params)
 
-    if (value === "All") {
-      next.delete("brand");
+    if (value === 'All') {
+      next.delete('brand')
     } else {
-      next.set("brand", value);
+      next.set('brand', value)
     }
 
-    setParams(next);
-  };
+    setParams(next)
+  }
 
+  // ---------------------------------------------------------
   // Select category
+  // ---------------------------------------------------------
   const selectCategory = (value) => {
-    const next = new URLSearchParams(params);
+    const next = new URLSearchParams(params)
 
-    if (value === "All") {
-      next.delete("category");
+    if (value === 'All') {
+      next.delete('category')
     } else {
-      next.set("category", value);
+      next.set('category', value)
     }
 
-    setParams(next);
-  };
+    setParams(next)
+  }
 
-  // Filter products
+  // ---------------------------------------------------------
+  // Filter and sort products
+  // ---------------------------------------------------------
   const filtered = useMemo(() => {
     let list = products.filter(
       (p) =>
-        p.status === "Active" &&
-        (active === "All" || p.category === active) &&
-        (brand === "All" || p.brand === brand) &&
-        `${p.name} ${p.brand}`.toLowerCase().includes(query.toLowerCase()),
-    );
+        p.status === 'Active' &&
+        (active === 'All' || p.category === active) &&
+        (brand === 'All' || p.brand === brand) &&
+        `${p.name} ${p.brand}`.toLowerCase().includes(query.toLowerCase())
+    )
 
-    if (sort === "low") {
-      list.sort((a, b) => a.price - b.price);
+    if (sort === 'low') {
+      list.sort((a, b) => a.price - b.price)
     }
 
-    if (sort === "high") {
-      list.sort((a, b) => b.price - a.price);
+    if (sort === 'high') {
+      list.sort((a, b) => b.price - a.price)
     }
 
-    if (sort === "name") {
-      list.sort((a, b) => a.name.localeCompare(b.name));
+    if (sort === 'name') {
+      list.sort((a, b) => a.name.localeCompare(b.name))
     }
 
-    if (sort === "featured") {
-      list.sort((a, b) => Number(b.featured) - Number(a.featured));
+    if (sort === 'featured') {
+      list.sort((a, b) => Number(b.featured) - Number(a.featured))
     }
 
-    return list;
-  }, [products, active, brand, query, sort]);
+    return list
+  }, [products, active, brand, query, sort])
 
+  // ---------------------------------------------------------
+  // Shop page UI
+  // ---------------------------------------------------------
   return (
     <main className="container-page py-12">
+
+      {/* Page heading */}
       <div className="text-center">
         <p className="eyebrow text-rose">The collection</p>
-        <h1 className="mt-3 font-display text-5xl">Shop beauty brands</h1>
+
+        <h1 className="mt-3 font-display text-5xl">
+          Shop beauty brands
+        </h1>
+
         <p className="mt-3 text-sm text-muted">
           Explore skincare, makeup and fragrance from a range of beauty labels.
         </p>
@@ -93,15 +147,15 @@ export default function Shop() {
 
         <div className="mt-3 flex flex-wrap gap-2">
           {brands
-            .filter((b) => b !== "All")
+            .filter((b) => b !== 'All')
             .map((b) => (
               <button
                 key={b}
                 onClick={() => selectBrand(b)}
                 className={`rounded-full border px-4 py-2 text-xs ${
                   brand === b
-                    ? "border-ink bg-ink text-white"
-                    : "border-line bg-white text-ink/75 hover:border-rose"
+                    ? 'border-ink bg-ink text-white'
+                    : 'border-line bg-white text-ink/75 hover:border-rose'
                 }`}
               >
                 {b}
@@ -109,11 +163,11 @@ export default function Shop() {
             ))}
 
           <button
-            onClick={() => selectBrand("All")}
+            onClick={() => selectBrand('All')}
             className={`rounded-full border px-4 py-2 text-xs ${
-              brand === "All"
-                ? "border-ink bg-ink text-white"
-                : "border-line bg-white text-ink/75"
+              brand === 'All'
+                ? 'border-ink bg-ink text-white'
+                : 'border-line bg-white text-ink/75'
             }`}
           >
             All brands
@@ -121,35 +175,48 @@ export default function Shop() {
         </div>
       </div>
 
-      {/* Categories from PostgreSQL */}
+      {/* Categories from backend */}
       <div className="mt-8 flex flex-col justify-between gap-4 border-b border-line pb-5 md:flex-row md:items-center">
+
         <div className="flex flex-wrap gap-2">
+
+          {/* All categories */}
           <button
-            onClick={() => selectCategory("All")}
+            onClick={() => selectCategory('All')}
             className={`rounded-full px-4 py-2 text-xs ${
-              active === "All" ? "bg-ink text-white" : "bg-cream text-ink/70"
+              active === 'All'
+                ? 'bg-ink text-white'
+                : 'bg-cream text-ink/70'
             }`}
           >
             All
           </button>
 
+          {/* Loading categories */}
           {loadingCategories && (
-            <p className="text-sm text-muted">Loading categories...</p>
+            <p className="text-sm text-muted">
+              Loading categories...
+            </p>
           )}
 
+          {/* Category error */}
           {categoryError && (
-            <p className="text-sm text-red-500">{categoryError}</p>
+            <p className="text-sm text-red-500">
+              {categoryError}
+            </p>
           )}
 
+          {/* Display categories */}
           {!loadingCategories &&
+            !categoryError &&
             categories.map((c) => (
               <button
                 key={c.id}
                 onClick={() => selectCategory(c.name)}
                 className={`rounded-full px-4 py-2 text-xs ${
                   active === c.name
-                    ? "bg-ink text-white"
-                    : "bg-cream text-ink/70"
+                    ? 'bg-ink text-white'
+                    : 'bg-cream text-ink/70'
                 }`}
               >
                 {c.name}
@@ -159,6 +226,7 @@ export default function Shop() {
 
         {/* Search and Sort */}
         <div className="grid w-full min-w-0 grid-cols-[minmax(0,1fr)_148px] gap-3 md:w-[430px] md:flex-none">
+
           <label className="relative block min-w-0">
             <Search
               size={17}
@@ -186,6 +254,7 @@ export default function Shop() {
             <option value="high">Price: high to low</option>
             <option value="name">Name</option>
           </select>
+
         </div>
       </div>
 
@@ -193,8 +262,8 @@ export default function Shop() {
       <div className="mt-7 flex items-center justify-between text-xs text-muted">
         <span>
           {filtered.length} products
-          {brand !== "All" ? ` · ${brand}` : ""}
-          {active !== "All" ? ` · ${active}` : ""}
+          {brand !== 'All' ? ` · ${brand}` : ''}
+          {active !== 'All' ? ` · ${active}` : ''}
         </span>
 
         <span className="flex items-center gap-1">
@@ -210,11 +279,13 @@ export default function Shop() {
         ))}
       </div>
 
+      {/* No products found */}
       {filtered.length === 0 && (
         <p className="py-20 text-center text-muted">
           No products found. Try another brand or category.
         </p>
       )}
+
     </main>
-  );
+  )
 }
