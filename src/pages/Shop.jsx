@@ -1,35 +1,28 @@
-import { useEffect, useMemo, useState } from "react";
-import { Search, SlidersHorizontal } from "lucide-react";
-import { useSearchParams } from "react-router-dom";
-import { useShop } from "../context/ShopContext";
-import { brands } from "../data/products";
-import { getCategories } from "../services/categoryService";
-import ProductCard from "../components/ProductCard";
+import { useMemo, useState, useEffect } from 'react'
+import { Search, SlidersHorizontal } from 'lucide-react'
+import { useSearchParams } from 'react-router-dom'
+import { categories, brands } from '../data/products'
+import ProductCard from '../components/ProductCard'
+import { productApi } from '../services/api'
 
 export default function Shop() {
-  const { products } = useShop();
+  const [products, setProducts] = useState([])
+  const [params, setParams] = useSearchParams()
+  const [query, setQuery] = useState('')
+  const [sort, setSort] = useState('featured')
+  const brand = params.get('brand') || 'All'
+  const active = params.get('category') || 'All'
 
-  const [params, setParams] = useSearchParams();
-  const [query, setQuery] = useState("");
-  const [sort, setSort] = useState("featured");
-
-  // Categories from PostgreSQL
-  const [categories, setCategories] = useState([]);
-  const [loadingCategories, setLoadingCategories] = useState(true);
-  const [categoryError, setCategoryError] = useState("");
-
-  // Fetch categories from Spring Boot API
   useEffect(() => {
-    getCategories()
-      .then((data) => setCategories(data))
-      .catch((error) => setCategoryError(error.message))
-      .finally(() => setLoadingCategories(false));
-  }, []);
+    productApi.getAll()
+      .then((data) => {
+        setProducts(data)
+      })
+      .catch((error) => {
+        console.error('Failed to load products from backend:', error)
+      });
+  }, [])
 
-  const brand = params.get("brand") || "All";
-  const active = params.get("category") || "All";
-
-  // Select brand
   const selectBrand = (value) => {
     const next = new URLSearchParams(params);
 
